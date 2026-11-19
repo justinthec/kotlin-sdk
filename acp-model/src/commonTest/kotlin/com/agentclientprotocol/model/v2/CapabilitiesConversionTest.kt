@@ -13,6 +13,7 @@ import com.agentclientprotocol.model.SessionAdditionalDirectoriesCapabilities
 import com.agentclientprotocol.model.SessionCloseCapabilities
 import com.agentclientprotocol.model.SessionListCapabilities
 import com.agentclientprotocol.model.SessionResumeCapabilities
+import com.agentclientprotocol.model.SessionSystemPromptCapabilities
 import com.agentclientprotocol.model.v2.conversion.ProtocolConversionException
 import com.agentclientprotocol.model.v2.conversion.fromV1
 import com.agentclientprotocol.model.v2.conversion.toV1
@@ -165,6 +166,14 @@ class CapabilitiesConversionTest {
         assertEquals(
             "v1 SessionCapabilities.close cannot be represented in v2",
             fromV1Failure(baseline.copy(close = null)).message,
+        )
+    }
+
+    @Test
+    fun `v1 system prompt capability has no v2 form yet`() {
+        assertEquals(
+            "v1 SessionCapabilities.systemPrompt cannot be represented in v2",
+            fromV1Failure(baselineV1SessionCapabilities().copy(systemPrompt = SessionSystemPromptCapabilities())).message,
         )
     }
 

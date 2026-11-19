@@ -413,9 +413,6 @@ public class Client(
      * A created object must also implement the necessary interfaces in the case when the client declares extra capabilities like file system or terminal support.
      * See [ClientOperationsFactory.createClientOperations] for more details.
      * @return a [ClientSession] instance for the new session
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     public suspend fun newSession(sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
         requireSystemPromptSupport(sessionParameters.systemPrompt)
@@ -446,9 +443,6 @@ public class Client(
      * @return a [ClientSession] instance for the new session
      * @throws IllegalStateException before the request, if a call with ready operations has opened [sessionId] or
      *   is opening it
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     public suspend fun loadSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
         requireSystemPromptSupport(sessionParameters.systemPrompt)
@@ -480,9 +474,6 @@ public class Client(
      * @return a [ClientSession] instance for the loaded session
      * @throws IllegalStateException before the request, if [sessionId] already has a session in this client or
      *   another call is opening it
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     public suspend fun loadSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operations: ClientSessionOperations): ClientSession {
         requireSystemPromptSupport(sessionParameters.systemPrompt)
@@ -548,9 +539,6 @@ public class Client(
      * A created object must also implement the necessary interfaces in the case when the client declares extra capabilities like file system or terminal support.
      * See [ClientOperationsFactory.createClientOperations] for more details.
      * @return a [ClientSession] instance for the forked session
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     @UnstableApi
     public suspend fun forkSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
@@ -589,9 +577,6 @@ public class Client(
      * @return a [ClientSession] instance for the resumed session
      * @throws IllegalStateException before the request, if a call with ready operations has opened [sessionId] or
      *   is opening it
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     @UnstableApi
     public suspend fun resumeSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
@@ -621,9 +606,6 @@ public class Client(
      * @param operations the operations of the session. It must also implement the interfaces for the extra
      * capabilities that the client declares, like file system or terminal support.
      * @return a [ClientSession] instance for the resumed session
-     * @throws AcpExpectedError before the request, if [SessionCreationParameters.systemPrompt] is set but the agent
-     *   did not advertise `sessionCapabilities.systemPrompt` (and `mode.override` for [SystemPromptMode.OVERRIDE]),
-     *   or its content is empty
      */
     @UnstableApi
     public suspend fun resumeSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operations: ClientSessionOperations): ClientSession {
@@ -792,9 +774,7 @@ public class Client(
     }
 
     /**
-     * Fails locally, before any request is sent, when [systemPrompt] cannot be sent to this agent: its content is
-     * empty, the agent did not advertise `sessionCapabilities.systemPrompt`, or it uses [SystemPromptMode.OVERRIDE]
-     * without `sessionCapabilities.systemPrompt.mode.override`. Other modes are passed through as is.
+     * Enforces the client side of [SessionCreationParameters.systemPrompt] before any request is sent.
      */
     private suspend fun requireSystemPromptSupport(systemPrompt: SystemPrompt?) {
         if (systemPrompt == null) return
