@@ -415,6 +415,7 @@ public class Client(
      * @return a [ClientSession] instance for the new session
      */
     public suspend fun newSession(sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withInitializingSession {
             val newSessionResponse = AcpMethod.AgentMethods.V1.SessionNew(
                 protocol,
@@ -422,6 +423,7 @@ public class Client(
                     sessionParameters.cwd,
                     sessionParameters.mcpServers,
                     sessionParameters.additionalDirectories,
+                    sessionParameters.systemPrompt,
                     sessionParameters._meta
                 )
             )
@@ -443,6 +445,7 @@ public class Client(
      *   is opening it
      */
     public suspend fun loadSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withFactoryInitializingSession(sessionId, sessionParameters, operationsFactory) {
             AcpMethod.AgentMethods.V1.SessionLoad(
                 protocol,
@@ -473,6 +476,7 @@ public class Client(
      *   another call is opening it
      */
     public suspend fun loadSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operations: ClientSessionOperations): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withEarlyInitializingSession(sessionId, sessionParameters, operations) {
             AcpMethod.AgentMethods.V1.SessionLoad(
                 protocol,
@@ -538,6 +542,7 @@ public class Client(
      */
     @UnstableApi
     public suspend fun forkSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withInitializingSession {
             val forkSessionResponse = AcpMethod.AgentMethods.V1.SessionFork(
                 protocol,
@@ -546,6 +551,7 @@ public class Client(
                     sessionParameters.cwd,
                     sessionParameters.mcpServers,
                     sessionParameters.additionalDirectories,
+                    sessionParameters.systemPrompt,
                     sessionParameters._meta
                 )
             )
@@ -574,6 +580,7 @@ public class Client(
      */
     @UnstableApi
     public suspend fun resumeSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operationsFactory: ClientOperationsFactory): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withFactoryInitializingSession(sessionId, sessionParameters, operationsFactory) {
             AcpMethod.AgentMethods.V1.SessionResume(
                 protocol,
@@ -602,6 +609,7 @@ public class Client(
      */
     @UnstableApi
     public suspend fun resumeSession(sessionId: SessionId, sessionParameters: SessionCreationParameters, operations: ClientSessionOperations): ClientSession {
+        requireSystemPromptSupport(sessionParameters.systemPrompt)
         return withEarlyInitializingSession(sessionId, sessionParameters, operations) {
             AcpMethod.AgentMethods.V1.SessionResume(
                 protocol,
@@ -765,12 +773,33 @@ public class Client(
         }
     }
 
+    /**
+     * Enforces the client side of [SessionCreationParameters.systemPrompt] before any request is sent.
+     */
+    private suspend fun requireSystemPromptSupport(systemPrompt: SystemPrompt?) {
+        if (systemPrompt == null) return
+
+        if (systemPrompt.content.isEmpty()) {
+            acpFail("Cannot send systemPrompt with empty content")
+        }
+        // _agentInfo only completes on successful initialization, so awaiting it earlier could hang forever.
+        if (!_agentInfo.isCompleted) {
+            acpFail("Cannot send systemPrompt before initialization completes")
+        }
+        val capability = _agentInfo.await().capabilities.sessionCapabilities.systemPrompt
+            ?: acpFail("Cannot send systemPrompt: the agent did not advertise sessionCapabilities.systemPrompt")
+        if (systemPrompt.mode == SystemPromptMode.OVERRIDE && capability.mode?.override == null) {
+            acpFail("Cannot send systemPrompt in override mode: the agent did not advertise sessionCapabilities.systemPrompt.mode.override")
+        }
+    }
+
     private fun loadSessionRequest(sessionId: SessionId, sessionParameters: SessionCreationParameters): LoadSessionRequest =
         LoadSessionRequest(
             sessionId,
             sessionParameters.cwd,
             sessionParameters.mcpServers,
             sessionParameters.additionalDirectories,
+            sessionParameters.systemPrompt,
             sessionParameters._meta
         )
 
@@ -780,6 +809,7 @@ public class Client(
             sessionParameters.cwd,
             sessionParameters.mcpServers,
             sessionParameters.additionalDirectories,
+            sessionParameters.systemPrompt,
             sessionParameters._meta
         )
 

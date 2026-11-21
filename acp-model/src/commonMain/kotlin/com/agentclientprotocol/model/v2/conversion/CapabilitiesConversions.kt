@@ -187,6 +187,8 @@ public fun SessionCapabilities.Companion.fromV1(
     val close = sessionCapabilities.close ?: throw unrepresentableV1Field("SessionCapabilities", "close")
     rejectV1MarkerMeta("SessionCapabilities", "close", close._meta)
 
+    if (sessionCapabilities.systemPrompt != null) throw unrepresentableV1Field("SessionCapabilities", "systemPrompt")
+
     return SessionCapabilities(
         prompt = promptCapabilities.toV2(),
         mcp = mcpCapabilities.toV2(),
